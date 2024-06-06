@@ -31,9 +31,13 @@ const jobadd = new mongoose.Schema({
     joblink:{
         type:String,
         required:true
+    },
+    jobcompany:{
+        required:true,
+        type:String
     }
 })
-const a = mongoose.model('jobdetails' , jobadd);
+const a = mongoose.model('jobdata' , jobadd);
 module.exports = a;
 // Output: Tue Apr 20 2024 12:00:00 GMT+0000 (Coordinated Universal Time)
 // const today = new Date();

@@ -9,7 +9,8 @@ const jwt = require("jsonwebtoken");
 const { body, validationResult } = require("express-validator");
 const verifyToken = require("../authMiddleware");
 const multer = require("multer");
-
+const dotenv = require("dotenv");
+dotenv.config();
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
     cb(null, "uploads");
@@ -68,12 +69,11 @@ router.post(
         {
           id: user._id,
         },
-        "Vishesh@123",
+        process.env.KEY,
         { expiresIn: "24h" }
       );
       return res.status(200).json({ token: token });
     } catch (error) {
-      console.error("Error creating user:", error);
       return res.status(500).json({ error: "Internal server error" });
     }
   }
@@ -107,29 +107,16 @@ router.post(
           id: getuser._id,
         },
       };
-      const authToken = jwt.sign(data, "Vishesh@123");
+      const authToken = jwt.sign(data, process.env.KEY);
       return res.status(200).json({ token: authToken });
     } catch (error) {
-      console.error("Error during login:", error);
+     
       return res.status(500).json({ error: "Internal server error" });
     }
   }
 );
 
-// router.get("/validateToken", verifyToken, async (req, res) => {
-//   console.log("Validating token...");
-//   try {
-//     console.log("Fetching user...");
-//     const userid = req.user.id;
-//     const getuser = await UserSchema.findById(userid);
-//     if (getuser) {
-//       res.status(200).json({ user: getuser });
-//     }
-//   } catch (error) {
-//     console.error("Error fetching user:", error);
-//     res.status(500).json({ error: "Internal server error" });
-//   }
-// });
+
 
 //Provider-data
 
@@ -159,13 +146,12 @@ router.post("/providerregister", async (req, res) => {
 
     const token = jwt.sign(
       { id: newUser._id },
-      "Vishesh@123"
-      // { expiresIn: "24h" } // Optional: add token expiration
+      process.env.KEY,
+      { expiresIn: "24h" } 
     );
 
     return res.status(200).json({ token });
   } catch (error) {
-    console.error("Error creating user:", error);
     return res.status(500).json({ error: "Internal server error" });
   }
 });
@@ -174,12 +160,10 @@ router.post("/providerlogin", async (req, res) => {
     const { username, password } = req.body;
     const getuser = await ProviderSchema.findOne({ username });
     if (!getuser) {
-      console.log("user not exists");
       return res.status(401).json({ error: "Wrong details" });
     }
     const secpass = await bcrypt.compare(password, getuser.password);
     if (!secpass) {
-      console.log("pass not matched");
       return res.status(400).json({ error: "Incorrect password" });
     }
     const data = {
@@ -187,10 +171,9 @@ router.post("/providerlogin", async (req, res) => {
         id: getuser._id,
       },
     };
-    const authToken = jwt.sign(data, "Vishesh@123");
+    const authToken = jwt.sign(data, process.env.KEY);
     return res.status(200).json({ token: authToken });
   } catch (error) {
-    console.error("Error during login:", error);
     return res.status(500).json({ error: "Internal server error" });
   }
 });
@@ -211,6 +194,7 @@ router.post("/addjob", verifyToken, async (req, res) => {
         techskill,
         jobdescription,
         jobduration,
+        jobcompany,
         joblink,
       } = req.body;
 
@@ -222,7 +206,8 @@ router.post("/addjob", verifyToken, async (req, res) => {
         !techskill ||
         !jobdescription ||
         !jobduration ||
-        !joblink
+        !joblink ||
+        !jobcompany
       ) {
         return res.status(400).json({ error: "All fields are required" });
       }
@@ -235,11 +220,11 @@ router.post("/addjob", verifyToken, async (req, res) => {
         techskill,
         jobdescription,
         jobduration,
+        jobcompany,
         joblink,
       });
       res.status(200).json({ jobdetail });
     } catch (error) {
-      console.error("Error creating job:", error);
       res.status(500).json({ error: "Internal server error" });
     }
   }
@@ -270,22 +255,9 @@ router.post("/getalljob", verifyToken, async (req, res) => {
       }
     }
   } catch (error) {
-    console.error("Error fetching user:", error);
     res.status(500).json({ error: "Internal server error" });
   }
 });
-
-// try {
-//   console.log("Fetching user...");
-//   const userid = req.user.id;
-//   const getuser = await UserSchema.findById(userid);
-//   if (getuser) {
-//     res.status(200).json({ user: getuser });
-//   }
-// } catch (error) {
-//   console.error("Error fetching user:", error);
-//   res.status(500).json({ error: "Internal server error" });
-// }
 
 // router.patch("/updatejob/:id", async (req, res) => {
 //   const { id } = req.params;
@@ -312,9 +284,7 @@ router.post("/getalljob", verifyToken, async (req, res) => {
 // router.delete("/deletejob/:id", verifyToken, async (req, res) => {
 //   const { id } = req.params;
 //   try {
-//     const deljob = await Job.findByIdAndDelete({
-//       _id: id,
-//     });
+//     const deljob = await Job.findByIdAndDelete(id);
 //     res.status(200).json(deljob);
 //   } catch {
 //     res.status(400).json("NOT DELETE");
@@ -331,7 +301,6 @@ router.get("/userprofile", verifyToken, async (req, res) => {
       res.status(404).json({ error: "User not found" });
     }
   } catch (error) {
-    console.error("Error fetching user:", error);
     res.status(500).json({ error: "Internal server error" });
   }
 });
@@ -340,13 +309,11 @@ router.get("/providerprofile" , verifyToken , async (req , res) =>{
     const providerid = req.user.id;
     const getuser = await ProviderSchema.findById(providerid);
     if(getuser){
-      console.log("Ha Bhai hai")
       res.status(200).json({provider : getuser});
     }else{
       res.status(404).json({error : "User not found"});
     }
   }catch (error) {
-    console.error("Error fetching user:", error);
     res.status(500).json({ error: "Internal server error" });
   }
 })
