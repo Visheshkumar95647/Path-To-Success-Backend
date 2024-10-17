@@ -11,73 +11,55 @@ const verifyToken = require("../authMiddleware");
 const multer = require("multer");
 const dotenv = require("dotenv");
 dotenv.config();
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, "uploads");
-  },
-  filename: function (req, file, cb) {
-    cb(null, Date.now() + "-" + file.originalname);
-  },
-});
 
-const upload = multer({ storage: storage });
+
 
 // USER REGISTRATION
-router.post(
-  "/userregister",
-  upload.single("profileImage"), // Middleware to handle single file upload with field name 'profileImage'
-  [
-    body("name", "Enter a valid name").isLength({ min: 3 }),
-    body("username", "Enter a valid username").isLength({ min: 5 }),
-    body("password", "Enter a valid password").isLength({ min: 8 }),
-    body("number", "Enter a 10-digit number").isLength({ min: 10, max: 10 }),
-  ],
-  async (req, res) => {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
-    }
+router.post("/userregister", [
+  body("name", "Enter a valid name").isLength({ min: 3 }),
+  body("username", "Enter a valid username").isLength({ min: 5 }),
+  body("password", "Enter a valid password").isLength({ min: 8 }),
+  body("number", "Enter a 10-digit number").isLength({ min: 10, max: 10 }),
+], async (req, res) => {
+  const errors = validationResult(req);
 
-    let profileImageUrl = ""; // Initialize profile image URL
-
-    if (req.file) {
-      // If file was uploaded, set the profile image URL to the path where it's stored
-      profileImageUrl = req.file.path;
-    }
-
-    let user = await UserSchema.findOne({
-      email: req.body.email,
-      number: req.body.number,
-    });
-    if (user) {
-      return res
-        .status(400)
-        .json({ error: "User with this detail already exists" });
-    }
-    try {
-      const salt = await bcrypt.genSalt(10);
-      const secPass = await bcrypt.hash(req.body.password, salt);
-      user = await UserSchema.create({
-        name: req.body.name,
-        username: req.body.username,
-        email: req.body.email,
-        password: secPass,
-        number: req.body.number,
-        profileImage: profileImageUrl,
-      });
-      const token = jwt.sign(
-        {
-          id: user._id,
-        },
-        process.env.KEY,
-        { expiresIn: "24h" }
-      );
-      return res.status(200).json({ token: token });
-    } catch (error) {
-      return res.status(500).json({ error: "Internal server error" });
-    }
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ errors: errors.array() });
   }
-);
+
+  let user = await UserSchema.findOne({
+    email: req.body.email,
+    number: req.body.number,
+  });
+
+  if (user) {
+    return res.status(400).json({ error: "User with this detail already exists" });
+  }
+
+  try {
+    const salt = await bcrypt.genSalt(10);
+    const secPass = await bcrypt.hash(req.body.password, salt);
+    user = await UserSchema.create({
+      name: req.body.name,
+      username: req.body.username,
+      email: req.body.email,
+      password: secPass,
+      number: req.body.number,
+      profileImage: req.body.profileImage || "", // Add profileImage handling if necessary
+    });
+
+    const token = jwt.sign(
+      { id: user._id },
+      process.env.KEY,
+      { expiresIn: "24h" }
+    );
+
+    return res.status(200).json({ token: token });
+  } catch (error) {
+    return res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 
 // Other routes...
 

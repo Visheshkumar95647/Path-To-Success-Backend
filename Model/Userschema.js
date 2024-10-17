@@ -22,10 +22,7 @@ const UserSchema = new mongoose.Schema({
         type :Number,
         unique : true,
         required : true
-    },
-    profileImage:{
-        type:String
     }
 })
-const user = mongoose.model('newd' , UserSchema );
+const user = mongoose.model('updateData' , UserSchema );
 module.exports = user;
